@@ -21,8 +21,9 @@
 #include <string.h>
 #include <errno.h>
 #include "curve_data.h"
+#include "date_utils.h"
 
-int read_curve_file(const char* filename, curve_data* data)
+int read_curve_file(const char* filename, curve_data* data, const float mag_correction)
 {
 	FILE* fp = fopen(filename, "r");
 
@@ -38,13 +39,28 @@ int read_curve_file(const char* filename, curve_data* data)
 	data->ent = (curve_data_entry* ) malloc(sizeof(curve_data_entry));
 
 	while ((read = getline(&line, &len, fp)) != -1) {
+		if (strstr(line, "#") != NULL) { // skip comments
+			continue;
+		}
+
 		char* jd_str = strtok(line, " ");
 		char* magnitude = strtok(NULL, " ");
 
+		if (!jd_str || !magnitude) {
+			continue;
+		}
+
 		data->ent = (curve_data_entry* ) realloc(data->ent, sizeof(curve_data_entry) * (data->ent_num + 1));
 
-		data->ent[data->ent_num].timestamp = 0;
-		data->ent[data->ent_num].magnitude = 124;
+		data->ent[data->ent_num].magnitude = strtod(magnitude, NULL);
+
+		if (errno == ERANGE || data->ent[data->ent_num].magnitude == 0) {
+			fprintf(stderr, "Failed to parse line: %s Skipping...\n", line);
+			continue;
+		}
+
+		data->ent[data->ent_num].timestamp = jd_to_unix(jd_str);
+		data->ent[data->ent_num].magnitude += mag_correction;
 
 		data->ent_num++;
 	}

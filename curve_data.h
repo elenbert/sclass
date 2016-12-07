@@ -19,8 +19,10 @@
 #ifndef __CURVE_DATA_H__
 #define __CURVE_DATA_H__
 
+#define BAD_MAG -42
+
 typedef struct curveent {
-	int timestamp;
+	long timestamp;
 	float magnitude;
 } curve_data_entry;
 
@@ -29,7 +31,7 @@ typedef struct curve {
 	curve_data_entry *ent;
 } curve_data;
 
-int read_curve_file(const char* filename, curve_data* data);
+int read_curve_file(const char* filename, curve_data* data, const float mag_correction);
 void clean_curve_data(curve_data* data);
 
 #endif
