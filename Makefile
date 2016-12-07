@@ -4,9 +4,9 @@
 
 CC := gcc
 PROGRAM = sclass
-SRC := sclass.c curve_data.c
+SRC := sclass.c curve_data.c date_utils.c
 CFLAGS := -Wall -std=gnu99 -g -ggdb
-LDFLAG :=
+LDFLAG := -lm
 
 all: $(PROGRAM)
 
