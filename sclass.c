@@ -20,6 +20,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <getopt.h>
+#include <time.h>
 #include "curve_data.h"
 
 extern const char* __progname;
@@ -34,6 +35,18 @@ void show_usage()
 	printf("\t\t-n, --vextinction\t Magnitude extinction factor for V band\n");
 	printf("\t\t-d, --deltatime\t\t Time delta for searching nearest B-V measurements in minutes. Optional, default is 360 minutes\n");
 	printf("\t\t-z, --zenithext\t\t Magnitude extinction factor caused by atmosphere. Optional, default is 0\n\n");
+}
+
+static void restore_tz(char* tz)
+{
+	if (tz) {
+		setenv("TZ", tz, 1); 
+		free(tz);
+	} else {
+		unsetenv("TZ");
+	}
+
+	tzset();
 }
 
 int main(int argc, char** argv)
@@ -108,8 +121,19 @@ int main(int argc, char** argv)
 
 	curve_data v_curve_data = { 0, 0 };
 
+	/* Perfom all processing in UTC timezone */
+	char* tz = getenv("TZ");
+
+	if (tz) {
+		tz = strdup(tz);
+	}
+
+	setenv("TZ", "", 1);
+	tzset();
+
 	if (read_curve_file(vcurve_file, &v_curve_data, vextinction_factor + zenithextinction_factor) < 0) {
 		fprintf(stderr, "Failed to read curve data file for V band\n");
+		restore_tz(tz);
 		return -1;
 	}
 
@@ -118,8 +142,11 @@ int main(int argc, char** argv)
 	if (read_curve_file(bcurve_file, &b_curve_data, bextinction_factor + zenithextinction_factor) < 0) {
 		fprintf(stderr, "Failed to read curve data file for B band\n");
 		clean_curve_data(&v_curve_data);
+		restore_tz(tz);
 		return -1;
 	}
+
+	restore_tz(tz);
 
 	clean_curve_data(&b_curve_data);
 	clean_curve_data(&v_curve_data);
