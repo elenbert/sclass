@@ -53,13 +53,14 @@ int read_curve_file(const char* filename, curve_data* data, const float mag_corr
 		data->ent = (curve_data_entry* ) realloc(data->ent, sizeof(curve_data_entry) * (data->ent_num + 1));
 
 		data->ent[data->ent_num].magnitude = strtod(magnitude, NULL);
+		double jd = strtod(jd_str, NULL);
 
-		if (errno == ERANGE || data->ent[data->ent_num].magnitude == 0) {
+		if (errno == ERANGE || data->ent[data->ent_num].magnitude == 0 || jd == 0) {
 			fprintf(stderr, "Failed to parse line: %s Skipping...\n", line);
 			continue;
 		}
 
-		data->ent[data->ent_num].timestamp = jd_to_unix(jd_str);
+		data->ent[data->ent_num].timestamp = jd_to_unix(jd);
 		data->ent[data->ent_num].magnitude += mag_correction;
 
 		data->ent_num++;
