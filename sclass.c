@@ -101,14 +101,14 @@ int main(int argc, char** argv)
 		return -1;
 	}
 
-	curve_data v_curve_data;
+	curve_data v_curve_data = { 0, 0 };
 
 	if (read_curve_file(vcurve_file, &v_curve_data) < 0) {
 		fprintf(stderr, "Failed to read curve data file for V band\n");
 		return -1;
 	}
 
-	curve_data b_curve_data;
+	curve_data b_curve_data = { 0, 0 };
 
 	if (read_curve_file(bcurve_file, &b_curve_data) < 0) {
 		fprintf(stderr, "Failed to read curve data file for B band\n");

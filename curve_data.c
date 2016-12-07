@@ -36,7 +36,12 @@ int read_curve_file(const char* filename, curve_data* data)
 	ssize_t read;
 
 	while ((read = getline(&line, &len, fp)) != -1) {
-		
+		char* jd_str = strtok(line, " ");
+		char* magnitude = strtok(NULL, " ");
+
+		data->ent_num++;
+		data->ent = (curve_data_entry* ) malloc(sizeof(curve_data_entry));
+		data->ent++;
 	}
 
 	fclose(fp);
@@ -46,6 +51,11 @@ int read_curve_file(const char* filename, curve_data* data)
 
 void clean_curve_data(curve_data* data)
 {
-	
+	for (unsigned int i = 0; i <= data->ent_num; i++) {
+		curve_data_entry* ptr = data->ent++;
+		if (ptr) {
+			free(ptr);
+		}
+	}
 }
 
