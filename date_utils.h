@@ -19,8 +19,8 @@
 #ifndef __DATE_UTILS__
 #define __DATE_UTILS__
 
-long jd_to_unix(const char* jd_str);
-void unix_to_jd(const long unixtime, char* jd_str);
+long jd_to_unix(const double jd);
+double unix_to_jd(const long unixtime);
 
 #endif
 

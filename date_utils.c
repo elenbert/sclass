@@ -17,65 +17,77 @@
 */
 
 #include <math.h>
-#include <stdlib.h>
+#include <time.h>
 #include <string.h>
 #include <errno.h>
+#include <stdlib.h>
 #include "date_utils.h"
 
-long jd_to_unix(const char* jd_str)
+static const double DJMIN = -68569.5;
+static const double DJMAX = 1e9;
+
+/*
+ * Based on algorithms from the SOFA (Standards Of Fundamental Astronomy) library
+ */
+
+long jd_to_unix(const double jd)
 {
-	double dj1 = strtod(jd_str, NULL);
-	double dj2 = 0;
+	if (jd < DJMIN || jd > DJMAX) {
+		return -1;
+	}
 
-	const double DJMIN = -68569.5;
-	const double DJMAX = 1e9;
+	double jd2 = -0.5;
 
-	long jd, l, n, i, k;
-	double dj, d1, d2, f1, f2, f, d;
+	double f1 = fmod(jd, 1.0);
+	double f2 = fmod(jd2, 1.0);
 
-	dj = dj1 + dj2;
-	if (dj < DJMIN || dj > DJMAX) return -1;
+	double f = fmod(f1 + f2, 1.0);
 
-   if (dj1 >= dj2) {
-      d1 = dj1;
-      d2 = dj2;
-   } else {
-      d1 = dj2;
-      d2 = dj1;
-   }
+	if (f < 0.0) {
+		f += 1.0;
+	}
 
-   d2 -= 0.5;
+	double d = floor(jd - f1) + floor(jd2 - f2) + floor(f1 + f2 - f);
 
-/* Separate day and fraction. */
-   f1 = fmod(d1, 1.0);
-   f2 = fmod(d2, 1.0);
-   f = fmod(f1 + f2, 1.0);
-   if (f < 0.0) f += 1.0;
-   d = floor(d1 - f1) + floor(d2 - f2) + floor(f1 + f2 - f);
-   jd = (long) floor(d) + 1L;
+	long l = (long) floor(d) + 1L + 68569L;
+	long n = (4L * l) / 146097L;
+	l -= (146097L * n + 3L) / 4L;
+	long i = (4000L * (l + 1L)) / 1461001L;
+	l -= (1461L * i) / 4L - 31L;
+	long k = (80L * l) / 2447L;
 
 
-   l = jd + 68569L;
-   n = (4L * l) / 146097L;
-   l -= (146097L * n + 3L) / 4L;
-   i = (4000L * (l + 1L)) / 1461001L;
-   l -= (1461L * i) / 4L - 31L;
-   k = (80L * l) / 2447L;
+	struct tm converted_time;
+	memset(&converted_time, 0, sizeof(struct tm));
 
-	int day = (int) (l - (2447L * k) / 80L);
+	converted_time.tm_mday = (int) (l - (2447L * k) / 80L);
 
- l = k / 11L;
+    l = k / 11L;
 
-	int year = (int) (100L * (n - 49L) + i + l);
-	int month = (int) (k + 2L - 12L * l);
+	converted_time.tm_year = (int) (100L * (n - 49L) + i + l);
+	converted_time.tm_year -= 1900;
+	converted_time.tm_mon = (int) (k + 2L - 12L * l);
+	converted_time.tm_mon -= 1; // Jan is 0
 
-	printf("year: %i  month: %i  day: %i  fract of the day: %f\n", year, month, day, f);
+	converted_time.tm_hour = floor(f * 24.0);
 
-	return 0;
+	double min_f = (f * 24.0 - converted_time.tm_hour) * 60.0;
+	converted_time.tm_min = floor(min_f);
+
+	double sec_f = (min_f - converted_time.tm_min) * 60.0;
+	converted_time.tm_sec = floor(sec_f);
+
+	sec_f -= converted_time.tm_sec;
+
+	if (sec_f > 0.5) {
+		++converted_time.tm_sec;
+	}
+
+	return (long) timegm(&converted_time);
 }
 
-void unix_to_jd(const long unixtime, char* jd_str)
+double unix_to_jd(const long unixtime)
 {
-	
+	return 0;
 }
 
