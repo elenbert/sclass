@@ -32,7 +32,8 @@ void show_usage()
 	printf("\t\t-b, --bcurve\t\t Curve file for B band\n");
 	printf("\t\t-t, --bextinction\t Magnitude extinction factor for B band\n");
 	printf("\t\t-n, --vextinction\t Magnitude extinction factor for V band\n");
-	printf("\t\t-d, --deltatime\t\t Time delta for searching nearest B-V measurements in minutes. Optional, default is 360 minutes\n\n");
+	printf("\t\t-d, --deltatime\t\t Time delta for searching nearest B-V measurements in minutes. Optional, default is 360 minutes\n");
+	printf("\t\t-z, --zenithext\t\t Magnitude extinction factor caused by atmosphere. Optional, default is 0\n\n");
 }
 
 int main(int argc, char** argv)
@@ -43,7 +44,8 @@ int main(int argc, char** argv)
 		{ "bcurve", required_argument, NULL, 'b' },
 		{ "bextinction", required_argument, NULL, 't' },
 		{ "vextinction", required_argument, NULL, 'n' },
-		{ "deltatime", required_argument, NULL, 'd' }
+		{ "deltatime", required_argument, NULL, 'd' },
+		{ "zenithext", required_argument, NULL, 'z' }
 	};
 
 	const char *opt_str = "hv:b:t:n:d";
@@ -53,13 +55,12 @@ int main(int argc, char** argv)
 
 	float bextinction_factor = 0.0;
 	float vextinction_factor = 0.0;
+	float zenithextinction_factor = 0.0;
 
 	int deltatime_min = 360; // default 6 hours
 
 	int option_index = 0;
 	int opt = getopt_long(argc, argv, opt_str, long_options, &option_index);
-
-	char* buf;
 
 	while (opt != -1) {
 		switch (opt) {
@@ -87,6 +88,10 @@ int main(int argc, char** argv)
 				deltatime_min = atoi(optarg);
 				break;
 
+			case 'z':
+				zenithextinction_factor = strtod(optarg, NULL);
+				break;
+
 			default:
 				show_usage();
 				abort();
@@ -103,14 +108,14 @@ int main(int argc, char** argv)
 
 	curve_data v_curve_data = { 0, 0 };
 
-	if (read_curve_file(vcurve_file, &v_curve_data) < 0) {
+	if (read_curve_file(vcurve_file, &v_curve_data, vextinction_factor + zenithextinction_factor) < 0) {
 		fprintf(stderr, "Failed to read curve data file for V band\n");
 		return -1;
 	}
 
 	curve_data b_curve_data = { 0, 0 };
 
-	if (read_curve_file(bcurve_file, &b_curve_data) < 0) {
+	if (read_curve_file(bcurve_file, &b_curve_data, bextinction_factor + zenithextinction_factor) < 0) {
 		fprintf(stderr, "Failed to read curve data file for B band\n");
 		clean_curve_data(&v_curve_data);
 		return -1;
