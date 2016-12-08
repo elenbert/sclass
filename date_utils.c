@@ -25,9 +25,15 @@
 
 static const double DJMIN = -68569.5;
 static const double DJMAX = 1e9;
+static const int IYMIN = -4799;
+static const double JD_ZERO_POINT = 2400000;
+
+static const int mtab[] = { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
 
 /*
- * Based on algorithms from the SOFA (Standards Of Fundamental Astronomy) library
+ * Jd to yymmdd and vise versa conversions is based on algorithms 
+ * from the SOFA (Standards Of Fundamental Astronomy) library
+ * Copyright (C) 2016 IAU SOFA Board.
  */
 
 long jd_to_unix(const double jd)
@@ -88,6 +94,50 @@ long jd_to_unix(const double jd)
 
 double unix_to_jd(const long unixtime)
 {
-	return 0;
+	time_t tm_time = (time_t) unixtime;
+	struct tm* utc_time = gmtime(&tm_time);
+
+	int year = utc_time->tm_year + 1900; // restore epoch
+
+	if (year < IYMIN) {
+		return -1; // bad year
+	}
+
+	int mon = utc_time->tm_mon + 1; // Jan is 1
+
+	if (mon < 1 || mon > 12) {
+		return -2; // bad month
+	}
+
+	int leap_year = ((mon == 2) && !(year%4) && (year%100 || !(year%400)));
+
+	/* Validate day, taking into account leap years. */
+	if ((utc_time->tm_mday < 1) || (utc_time->tm_mday > (mtab[mon - 1] + leap_year))) {
+		return -3; // bad day
+	}
+
+	int m_year = (mon - 14) / 12;
+	long ym = (long) (m_year + year);
+
+	double djm = (double) ((1461L * (ym + 4800L)) / 4L
+							+ (367L * (long) (mon - 2 - 12 * m_year)) / 12L
+							- (3L * ((ym + 4900L) / 100L)) / 4L
+							+ (long) utc_time->tm_mday - 2432076L);
+
+	djm += JD_ZERO_POINT;  // calculated julian date without time
+
+	double day_frac = utc_time->tm_hour/24.0;
+
+	if (day_frac < 0.0) {
+		day_frac += 1.0;
+	}
+
+	double frac = day_frac + (utc_time->tm_min + utc_time->tm_sec / 60.0) / 60.0 / 24.0;
+
+	frac = round(frac * 100000) / 100000;
+
+	djm += frac;
+
+	return djm;
 }
 
