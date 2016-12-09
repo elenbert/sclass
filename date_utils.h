@@ -16,8 +16,8 @@
  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef __DATE_UTILS__
-#define __DATE_UTILS__
+#ifndef __DATE_UTILS_H__
+#define __DATE_UTILS_H__
 
 long jd_to_unix(const double jd);
 double unix_to_jd(const long unixtime);
