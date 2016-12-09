@@ -4,7 +4,7 @@
 
 CC := gcc
 PROGRAM = sclass
-SRC := sclass.c curve_data.c date_utils.c
+SRC := sclass.c curve_data.c date_utils.c spectral.c
 CFLAGS := -Wall -std=gnu99 -g -ggdb
 LDFLAG := -lm
 
