@@ -23,7 +23,8 @@
 
 typedef struct curveent {
 	long timestamp;
-	float magnitude;
+	float magnitude_a;
+	float magnitude_b;
 } curve_data_entry;
 
 typedef struct curve {
@@ -32,6 +33,7 @@ typedef struct curve {
 } curve_data;
 
 int read_curve_file(const char* filename, curve_data* data, const float mag_correction);
+void generate_common_curve_data_set(curve_data* list1, curve_data* list2, curve_data* commlist, const int time_delta);
 void clean_curve_data(curve_data* data);
 
 #endif
