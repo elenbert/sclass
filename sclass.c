@@ -22,6 +22,7 @@
 #include <getopt.h>
 #include <time.h>
 #include "curve_data.h"
+#include "spectral.h"
 
 extern const char* __progname;
 
@@ -31,8 +32,8 @@ void show_usage()
 	printf("\t%s -v \"vcurve_file_name\" -b \"bcurve_file_name\" -t bext_val -n vect_val -d=tm\n", __progname);
 	printf("\t\t-v, --vcurve\t\t Curve file for V band\n");
 	printf("\t\t-b, --bcurve\t\t Curve file for B band\n");
-	printf("\t\t-t, --bextinction\t Magnitude extinction factor for B band\n");
-	printf("\t\t-n, --vextinction\t Magnitude extinction factor for V band\n");
+	printf("\t\t-t, --bextinction\t Magnitude extinction factor for B band. Optional, default is 0\n");
+	printf("\t\t-n, --vextinction\t Magnitude extinction factor for V band. Optional, default is 0\n");
 	printf("\t\t-d, --deltatime\t\t Time delta for searching nearest B-V measurements in minutes. Optional, default is 360 minutes\n");
 	printf("\t\t-z, --zenithext\t\t Magnitude extinction factor caused by atmosphere. Optional, default is 0\n\n");
 }
@@ -61,7 +62,7 @@ int main(int argc, char** argv)
 		{ "zenithext", required_argument, NULL, 'z' }
 	};
 
-	const char *opt_str = "hv:b:t:n:d";
+	const char *opt_str = "hv:b:t:n:d:z:";
 
 	char* vcurve_file = NULL;
 	char* bcurve_file = NULL;
@@ -113,7 +114,7 @@ int main(int argc, char** argv)
 		opt = getopt_long(argc, argv, opt_str, long_options, &option_index);
 	}
 
-	if (!vcurve_file || !bcurve_file || bextinction_factor == 0 || vextinction_factor == 0) {
+	if (!vcurve_file || !bcurve_file) {
 		printf("Argument(s) required!\n\n");
 		show_usage();
 		return -1;
@@ -131,7 +132,7 @@ int main(int argc, char** argv)
 	setenv("TZ", "", 1);
 	tzset();
 
-	if (read_curve_file(vcurve_file, &v_curve_data, vextinction_factor + zenithextinction_factor) < 0) {
+	if (read_curve_file(vcurve_file, &v_curve_data, vextinction_factor + zenithextinction_factor) != 0) {
 		fprintf(stderr, "Failed to read curve data file for V band\n");
 		restore_tz(tz);
 		return -1;
@@ -139,17 +140,25 @@ int main(int argc, char** argv)
 
 	curve_data b_curve_data = { 0, 0 };
 
-	if (read_curve_file(bcurve_file, &b_curve_data, bextinction_factor + zenithextinction_factor) < 0) {
+	if (read_curve_file(bcurve_file, &b_curve_data, bextinction_factor + zenithextinction_factor) != 0) {
 		fprintf(stderr, "Failed to read curve data file for B band\n");
 		clean_curve_data(&v_curve_data);
 		restore_tz(tz);
 		return -1;
 	}
 
+	curve_data common_curve = { 0, 0 };
+
+	generate_common_curve_data_set(&v_curve_data, &b_curve_data, &common_curve, deltatime_min);
+
 	restore_tz(tz);
 
 	clean_curve_data(&b_curve_data);
 	clean_curve_data(&v_curve_data);
+
+	calculate_spectral_class_for_curve(&common_curve);
+
+	clean_curve_data(&common_curve);
 
 	return 0;
 }
